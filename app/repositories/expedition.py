@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from app.models import Expedition
-
 from uuid import UUID
+
 from sqlalchemy import select
+
+from app.models import Expedition
 
 
 class ExpeditionRepository:
@@ -16,5 +17,15 @@ class ExpeditionRepository:
     async def get_by_id(self, session, expedition_id: UUID) -> Expedition | None:
         result = await session.execute(
             select(Expedition).where(Expedition.id == expedition_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_id_for_update(
+        self,
+        session,
+        expedition_id: UUID,
+    ) -> Expedition | None:
+        result = await session.execute(
+            select(Expedition).where(Expedition.id == expedition_id).with_for_update()
         )
         return result.scalar_one_or_none()

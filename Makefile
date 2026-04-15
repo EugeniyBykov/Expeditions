@@ -18,7 +18,6 @@ test:
 run:
 	$(PYTHON) -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-
 wipe-db:
 	$(PYTHON) -m alembic downgrade base
 	$(PYTHON) -m alembic upgrade head

@@ -30,8 +30,15 @@ class ExpeditionService:
         self,
         expedition_id: UUID,
         uow: AsyncUnitOfWork,
+        for_update: bool = False,
     ) -> Expedition:
-        expedition = await self.repository.get_by_id(uow.session, expedition_id)
+        if for_update:
+            expedition = await self.repository.get_by_id_for_update(
+                uow.session, expedition_id
+            )
+        else:
+            expedition = await self.repository.get_by_id(uow.session, expedition_id)
+
         if expedition is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -104,7 +111,7 @@ class ExpeditionService:
         user: User,
         uow: AsyncUnitOfWork,
     ) -> Expedition:
-        expedition = await self._get_expedition_or_404(expedition_id, uow)
+        expedition = await self._get_expedition_or_404(expedition_id, uow, True)
         self._ensure_chief_can_manage(expedition, user)
 
         self._ensure_status_allowed(
@@ -124,7 +131,7 @@ class ExpeditionService:
         user: User,
         uow: AsyncUnitOfWork,
     ) -> Expedition:
-        expedition = await self._get_expedition_or_404(expedition_id, uow)
+        expedition = await self._get_expedition_or_404(expedition_id, uow, True)
         self._ensure_chief_can_manage(expedition, user)
 
         self._ensure_status_allowed(
@@ -181,7 +188,7 @@ class ExpeditionService:
         user: User,
         uow: AsyncUnitOfWork,
     ) -> Expedition:
-        expedition = await self._get_expedition_or_404(expedition_id, uow)
+        expedition = await self._get_expedition_or_404(expedition_id, uow, True)
         self._ensure_chief_can_manage(expedition, user)
 
         self._ensure_status_allowed(
@@ -203,7 +210,7 @@ class ExpeditionService:
     ):
         expedition = await self._get_expedition_or_404(payload.expedition_id, uow)
 
-        if expedition.chief_id != user.id:
+        if expedition.chief_id != user.id or user.role != UserRole.CHIEF:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only expedition chief can invite members",
@@ -266,12 +273,6 @@ class ExpeditionService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Invitation not found",
-            )
-
-        if member.user_id != user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only invited user can confirm invitation",
             )
 
         if member.state != ExpeditionMemberState.INVITED:
