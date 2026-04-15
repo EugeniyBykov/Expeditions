@@ -58,7 +58,7 @@ Notes:
 ## Useful commands
 
     make install
-    install-dev
+    make install-dev
     make lint
     make test
     make run
