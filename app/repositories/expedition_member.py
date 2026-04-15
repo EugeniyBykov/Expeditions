@@ -36,3 +36,8 @@ class ExpeditionMemberRepository:
         await session.flush()
         await session.refresh(member)
         return member
+
+    async def update(self, session, member: ExpeditionMember) -> ExpeditionMember:
+        await session.flush()
+        await session.refresh(member)
+        return member

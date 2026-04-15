@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, status
 
 from app.db import AsyncUnitOfWork, get_uow
@@ -41,4 +43,18 @@ async def invite_member(
 ) -> ExpeditionInviteResponse:
     service = ExpeditionService()
     member = await service.invite_member(payload, current_user, uow)
+    return ExpeditionInviteResponse.model_validate(member)
+
+
+@router.post(
+    "/invite/confirm/{expedition_id}",
+    response_model=ExpeditionInviteResponse,
+)
+async def confirm_invitation(
+    expedition_id: UUID,
+    current_user: User = Depends(get_current_user),
+    uow: AsyncUnitOfWork = Depends(get_uow),
+) -> ExpeditionInviteResponse:
+    service = ExpeditionService()
+    member = await service.confirm_invitation(expedition_id, current_user, uow)
     return ExpeditionInviteResponse.model_validate(member)

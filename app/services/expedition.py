@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from app.db import AsyncUnitOfWork
 from app.dto.expedition import ExpeditionCreateRequest, ExpeditionInviteRequest
 from app.models import Expedition, User
-from app.models.base import ExpeditionStatus, UserRole
+from app.models.base import ExpeditionStatus, UserRole, ExpeditionMemberState
 from app.repositories.expedition import ExpeditionRepository
 from app.repositories.expedition_member import ExpeditionMemberRepository
 
@@ -49,10 +49,16 @@ class ExpeditionService:
     ):
         expedition = await self._get_expedition_or_404(payload.expedition_id, uow)
 
-        if expedition.chief_id != user.id or user.role != UserRole.CHIEF:
+        if expedition.chief_id != user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only expedition chief can invite members",
+            )
+
+        if expedition.status != ExpeditionStatus.DRAFT:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only draft expeditions can be invited to",
             )
 
         invited_user = await self._get_user_or_404(payload.user_id, uow)
@@ -77,6 +83,48 @@ class ExpeditionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="User is already invited to this expedition",
             )
+
+    async def confirm_invitation(
+        self,
+        expedition_id,
+        user: User,
+        uow: AsyncUnitOfWork,
+    ):
+        expedition = await self._get_expedition_or_404(expedition_id, uow)
+
+        if expedition.status != ExpeditionStatus.DRAFT:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only draft expeditions can be confirmed",
+            )
+
+        member = await self.member_repository.get_by_expedition_and_user(
+            uow.session,
+            expedition.id,
+            user.id,
+        )
+        if member is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invitation not found",
+            )
+
+        if member.user_id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only invited user can confirm invitation",
+            )
+
+        if member.state != ExpeditionMemberState.INVITED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invitation has already been confirmed",
+            )
+
+        member.state = ExpeditionMemberState.CONFIRMED
+        member.confirmed_at = datetime.now(timezone.utc)
+
+        return await self.member_repository.update(uow.session, member)
 
     async def _get_expedition_or_404(
         self,
