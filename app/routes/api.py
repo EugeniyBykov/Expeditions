@@ -8,5 +8,5 @@ router = APIRouter()
     "/status",
     description="Get API status."
 )
-def get_status():
+async def get_status():
     return PlainTextResponse(status_code=200, content="OK")

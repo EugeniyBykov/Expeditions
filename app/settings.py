@@ -41,7 +41,7 @@ class DatabaseSettings(BaseSettings):
 
     @property
     def sqlalchemy_url(self) -> str:
-        """Return the configured DB URL or build it from individual fields."""
+        """Return the configured async DB URL or build it from individual fields."""
         if self.database_url:
             return self.database_url
 
@@ -60,7 +60,32 @@ class DatabaseSettings(BaseSettings):
             )
 
         return (
-            f"postgresql://{self.postgres_user}:{self.postgres_password}"
+            f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
+            f"@localhost:{self.postgres_port}/{self.postgres_db}"
+        )
+
+    @property
+    def alembic_url(self) -> str:
+        """Return a synchronous DB URL for Alembic migrations."""
+        if self.database_url:
+            return self.database_url.replace("postgresql+asyncpg://", "postgresql+psycopg://")
+
+        missing = [
+            name for name, value in (
+                ("postgres_db", self.postgres_db),
+                ("postgres_user", self.postgres_user),
+                ("postgres_password", self.postgres_password),
+            )
+            if not value
+        ]
+        if missing:
+            raise RuntimeError(
+                "Database configuration is incomplete. Set either DATABASE_URL "
+                "or the following variables: postgres_db, postgres_user, postgres_password."
+            )
+
+        return (
+            f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
             f"@localhost:{self.postgres_port}/{self.postgres_db}"
         )
 
@@ -72,7 +97,6 @@ class APIDocsSettings(BaseSettings):
     description: Optional[str] = None
     """Description of the API"""
     version: str = "version"
-    """Version of the API"""
 
     class Config(BaseSettings.Config):
         env_prefix = "API_DOCS_"
