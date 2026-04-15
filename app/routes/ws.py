@@ -31,7 +31,7 @@ async def _get_ws_user(websocket: WebSocket) -> User | None:
         return user
 
 
-@router.websocket("/")
+@router.websocket("")
 async def websocket_endpoint(websocket: WebSocket) -> None:
     user = await _get_ws_user(websocket)
     if user is None:
