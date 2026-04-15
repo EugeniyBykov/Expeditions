@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Enum as SAEnum
+from sqlalchemy import DateTime, ForeignKey, Enum as SAEnum, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, ExpeditionMemberState
@@ -9,6 +9,11 @@ from .base import Base, ExpeditionMemberState
 
 class ExpeditionMember(Base):
     __tablename__ = "expedition_members"
+    __table_args__ = (
+        UniqueConstraint(
+            "expedition_id", "user_id", name="expedition_member_user_id_expedition_id"
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     expedition_id: Mapped[UUID] = mapped_column(
