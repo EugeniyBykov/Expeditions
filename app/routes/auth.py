@@ -6,7 +6,7 @@ from app.services.auth import AuthService, LoginRequest, TokenResponse
 router = APIRouter()
 
 
-@router.post("/auth/login", response_model=TokenResponse, tags=["auth"])
+@router.post("/login", response_model=TokenResponse, tags=["auth"])
 async def login(
     payload: LoginRequest,
     uow: AsyncUnitOfWork = Depends(get_uow),

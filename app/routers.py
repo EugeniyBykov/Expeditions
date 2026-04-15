@@ -1,17 +1,18 @@
 from fastapi import FastAPI
 
-from app.routes import api
-from app.routes import auth
+from app.routes import auth, api, expeditions
 
 
 def setup_routes(app: FastAPI):
     """Each Router specified in routes/* must be referenced in setup_routes(),
     as a new app.include_router() call."""
     app.include_router(api.router, prefix="", tags=["api"])
-    app.include_router(auth.router, prefix="", tags=["auth"])
+    app.include_router(auth.router, prefix="/auth", tags=["auth"])
+    app.include_router(expeditions.router, prefix="/expeditions", tags=["expeditions"])
 
 
 TAGS_METADATA = [
     {"name": "api", "description": "General system endpoints for the API."},
     {"name": "auth", "description": "Authentication endpoints."},
+    {"name": "expeditions", "description": "Expedition management endpoints."},
 ]
