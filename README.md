@@ -64,6 +64,11 @@ Notes:
     make run
     make wipe-db
 
+## Local testing
+- Run `make test` to run the tests.
+- for manual testing you can use `postman_collection.json` collection (import it to postman)
+- for Websocket testing you can use `ws_test.py` script or Postman (ws not included in the collection)
+
 ## Notes
 
 - The app uses environment variables for configuration.

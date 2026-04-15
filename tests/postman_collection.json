@@ -1,0 +1,270 @@
+{
+  "info": {
+    "_postman_id": "249cd45e-0761-4ef4-80c3-c3e213ca7600",
+    "name": "Expeditions",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "9492289",
+    "_collection_link": "https://go.postman.co/collection/9492289-249cd45e-0761-4ef4-80c3-c3e213ca7600?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/status",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "status"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "auth/login",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"chief3@test.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8000/auth/login",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "create",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjMzAyODFmYS0zMWRiLTQ1MTgtYmE3Yi04ZTdiNmE3MDMzY2IiLCJpYXQiOjE3NzYyNzUzMjMsImV4cCI6MTc3NjI3ODkyMywiZW1haWwiOiJjaGllZjNAdGVzdC5jb20iLCJyb2xlIjoiY2hpZWYifQ.mg_N8Era2DqLH41tuWjUF6MM6kJ63AJJvGMRx9VO-VU",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"title\": \"Test5\",\n    \"description\": \"my 5 expedition\",\n    \"start_at\": \"2026-03-12\",\n    \"end_at\":  \"2026-06-25\",\n    \"capacity\": 3\n\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8000/expeditions",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "expeditions"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "invite",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjMzAyODFmYS0zMWRiLTQ1MTgtYmE3Yi04ZTdiNmE3MDMzY2IiLCJpYXQiOjE3NzYyNzUzMjMsImV4cCI6MTc3NjI3ODkyMywiZW1haWwiOiJjaGllZjNAdGVzdC5jb20iLCJyb2xlIjoiY2hpZWYifQ.mg_N8Era2DqLH41tuWjUF6MM6kJ63AJJvGMRx9VO-VU",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"expedition_id\": \"5be0fd8e-9032-42a1-8077-e538c791f142\",\n    \"user_id\": \"940d4310-d4ce-496d-9ad0-efd62086683a\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8000/expeditions/invite",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "expeditions",
+            "invite"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "invite/confirm",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5NDBkNDMxMC1kNGNlLTQ5NmQtOWFkMC1lZmQ2MjA4NjY4M2EiLCJpYXQiOjE3NzYyNzU0MjgsImV4cCI6MTc3NjI3OTAyOCwiZW1haWwiOiJtZW1iZXIyMEB0ZXN0LmNvbSIsInJvbGUiOiJtZW1iZXIifQ.E6f8kN-sdK0_CXopQRAWpropLyo8x5hR9YZcpbV2aHI",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/expeditions/invite/confirm/5be0fd8e-9032-42a1-8077-e538c791f142",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "expeditions",
+            "invite",
+            "confirm",
+            "5be0fd8e-9032-42a1-8077-e538c791f142"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "ready",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjMzAyODFmYS0zMWRiLTQ1MTgtYmE3Yi04ZTdiNmE3MDMzY2IiLCJpYXQiOjE3NzYyNzgwMzUsImV4cCI6MTc3NjI4MTYzNSwiZW1haWwiOiJjaGllZjNAdGVzdC5jb20iLCJyb2xlIjoiY2hpZWYifQ.CdDnEo7f2PyaK9F8fsr3X5ysOuiIg0caHxqfyg1RZ-o",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/expeditions/5be0fd8e-9032-42a1-8077-e538c791f142/ready",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "expeditions",
+            "5be0fd8e-9032-42a1-8077-e538c791f142",
+            "ready"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "active",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjMzAyODFmYS0zMWRiLTQ1MTgtYmE3Yi04ZTdiNmE3MDMzY2IiLCJpYXQiOjE3NzYyNzgwMzUsImV4cCI6MTc3NjI4MTYzNSwiZW1haWwiOiJjaGllZjNAdGVzdC5jb20iLCJyb2xlIjoiY2hpZWYifQ.CdDnEo7f2PyaK9F8fsr3X5ysOuiIg0caHxqfyg1RZ-o",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8000/expeditions/5be0fd8e-9032-42a1-8077-e538c791f142/active",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "expeditions",
+            "5be0fd8e-9032-42a1-8077-e538c791f142",
+            "active"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "finished",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkN2Q1YzBlZS04NDZjLTRjZGMtODU2MS1lYWIyM2Q0NDdjNDEiLCJpYXQiOjE3NzYyNjI0NjMsImV4cCI6MTc3NjI2NjA2MywiZW1haWwiOiJjaGllZjFAdGVzdC5jb20iLCJyb2xlIjoiY2hpZWYifQ.L0dT-IpJA7HaQaSGqoFYINzVlrIPC1PpAi2gF3GitL4",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/expeditions/8a98e995-cea4-4291-9286-3fec2f304c3c/finished",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "expeditions",
+            "8a98e995-cea4-4291-9286-3fec2f304c3c",
+            "finished"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
