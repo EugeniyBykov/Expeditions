@@ -10,6 +10,7 @@ Create and activate a virtual environment:
 Install dependencies:
 
     make install
+    make install-dev
 
 Copy environment variables:
 
