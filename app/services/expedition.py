@@ -10,7 +10,7 @@ from app.constants import MIN_EXPEDITION_MEMBERS_COUNT
 from app.db import AsyncUnitOfWork
 from app.dto.expedition import ExpeditionCreateRequest, ExpeditionInviteRequest
 from app.models import Expedition, User
-from app.models.base import ExpeditionStatus, UserRole, ExpeditionMemberState
+from app.models.base import ExpeditionMemberState, ExpeditionStatus, UserRole
 from app.repositories.expedition import ExpeditionRepository
 from app.repositories.expedition_member import ExpeditionMemberRepository
 
@@ -19,6 +19,55 @@ class ExpeditionService:
     def __init__(self) -> None:
         self.repository = ExpeditionRepository()
         self.member_repository = ExpeditionMemberRepository()
+
+    async def _get_expedition_or_404(
+        self,
+        expedition_id: UUID,
+        uow: AsyncUnitOfWork,
+    ) -> Expedition:
+        expedition = await self.repository.get_by_id(uow.session, expedition_id)
+        if expedition is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Expedition not found",
+            )
+        return expedition
+
+    async def _get_user_or_404(
+        self,
+        user_id: UUID,
+        uow: AsyncUnitOfWork,
+    ) -> User:
+        user = await uow.session.get(User, user_id)
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+        return user
+
+    def _ensure_chief_can_manage(
+        self,
+        expedition: Expedition,
+        user: User,
+    ) -> None:
+        if user.role != UserRole.CHIEF or expedition.chief_id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only expedition chief can change expedition status",
+            )
+
+    def _ensure_status_allowed(
+        self,
+        expedition: Expedition,
+        allowed_statuses: tuple[ExpeditionStatus, ...],
+        error_message: str,
+    ) -> None:
+        if expedition.status not in allowed_statuses:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_message,
+            )
 
     async def create_expedition(
         self,
@@ -50,18 +99,13 @@ class ExpeditionService:
         uow: AsyncUnitOfWork,
     ) -> Expedition:
         expedition = await self._get_expedition_or_404(expedition_id, uow)
+        self._ensure_chief_can_manage(expedition, user)
 
-        if expedition.chief_id != user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only expedition chief can change expedition status",
-            )
-
-        if expedition.status in (ExpeditionStatus.ACTIVE, ExpeditionStatus.FINISHED):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cannot move expedition to ready from active or finished",
-            )
+        self._ensure_status_allowed(
+            expedition,
+            (ExpeditionStatus.DRAFT,),
+            "Expedition can be moved to ready only from draft",
+        )
 
         expedition.status = ExpeditionStatus.READY
         return expedition
@@ -73,18 +117,13 @@ class ExpeditionService:
         uow: AsyncUnitOfWork,
     ) -> Expedition:
         expedition = await self._get_expedition_or_404(expedition_id, uow)
+        self._ensure_chief_can_manage(expedition, user)
 
-        if expedition.chief_id != user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only expedition chief can change expedition status",
-            )
-
-        if expedition.status != ExpeditionStatus.READY:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Expedition can be moved to active only from ready",
-            )
+        self._ensure_status_allowed(
+            expedition,
+            (ExpeditionStatus.READY,),
+            "Expedition can be moved to active only from ready",
+        )
 
         now = datetime.now(timezone.utc)
         if expedition.start_at > now:
@@ -124,6 +163,24 @@ class ExpeditionService:
             )
 
         expedition.status = ExpeditionStatus.ACTIVE
+        return expedition
+
+    async def mark_finished(
+        self,
+        expedition_id: UUID,
+        user: User,
+        uow: AsyncUnitOfWork,
+    ) -> Expedition:
+        expedition = await self._get_expedition_or_404(expedition_id, uow)
+        self._ensure_chief_can_manage(expedition, user)
+
+        self._ensure_status_allowed(
+            expedition,
+            (ExpeditionStatus.ACTIVE,),
+            "Expedition can be finished only from active",
+        )
+
+        expedition.status = ExpeditionStatus.FINISHED
         return expedition
 
     async def invite_member(
@@ -210,29 +267,3 @@ class ExpeditionService:
         member.confirmed_at = datetime.now(timezone.utc)
 
         return await self.member_repository.update(uow.session, member)
-
-    async def _get_expedition_or_404(
-        self,
-        expedition_id: UUID,
-        uow: AsyncUnitOfWork,
-    ) -> Expedition:
-        expedition = await self.repository.get_by_id(uow.session, expedition_id)
-        if expedition is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Expedition not found",
-            )
-        return expedition
-
-    async def _get_user_or_404(
-        self,
-        user_id: UUID,
-        uow: AsyncUnitOfWork,
-    ) -> User:
-        user = await uow.session.get(User, user_id)
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found",
-            )
-        return user
