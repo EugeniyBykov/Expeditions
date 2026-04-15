@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.routes import auth, api, expeditions
+from app.routes import auth, api, expeditions, ws
 
 
 def setup_routes(app: FastAPI):
@@ -9,6 +9,7 @@ def setup_routes(app: FastAPI):
     app.include_router(api.router, prefix="", tags=["api"])
     app.include_router(auth.router, prefix="/auth", tags=["auth"])
     app.include_router(expeditions.router, prefix="/expeditions", tags=["expeditions"])
+    app.include_router(ws.router, prefix="/ws", tags=["ws"])
 
 
 TAGS_METADATA = [

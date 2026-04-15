@@ -14,6 +14,12 @@ from app.models.base import ExpeditionMemberState, ExpeditionStatus, UserRole
 from app.repositories.expedition import ExpeditionRepository
 from app.repositories.expedition_member import ExpeditionMemberRepository
 
+from app.websockets.broadcast import (
+    broadcast_expedition_status,
+    broadcast_member_confirmed,
+    broadcast_member_invited,
+)
+
 
 class ExpeditionService:
     def __init__(self) -> None:
@@ -108,6 +114,7 @@ class ExpeditionService:
         )
 
         expedition.status = ExpeditionStatus.READY
+        await broadcast_expedition_status(expedition.id, expedition.status.value)
         return expedition
 
     async def mark_active(
@@ -163,6 +170,7 @@ class ExpeditionService:
             )
 
         expedition.status = ExpeditionStatus.ACTIVE
+        await broadcast_expedition_status(expedition.id, expedition.status.value)
         return expedition
 
     async def mark_finished(
@@ -181,6 +189,7 @@ class ExpeditionService:
         )
 
         expedition.status = ExpeditionStatus.FINISHED
+        await broadcast_expedition_status(expedition.id, expedition.status.value)
         return expedition
 
     async def invite_member(
@@ -214,12 +223,14 @@ class ExpeditionService:
         invited_at = datetime.now(timezone.utc)
 
         try:
-            return await self.member_repository.create(
+            member = await self.member_repository.create(
                 uow.session,
                 expedition_id=expedition.id,
                 user_id=invited_user.id,
                 invited_at=invited_at,
             )
+            await broadcast_member_invited(expedition.id, invited_user.id, invited_at)
+            return member
         except IntegrityError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -266,4 +277,9 @@ class ExpeditionService:
         member.state = ExpeditionMemberState.CONFIRMED
         member.confirmed_at = datetime.now(timezone.utc)
 
-        return await self.member_repository.update(uow.session, member)
+        await broadcast_member_confirmed(
+            expedition.id,
+            user.id,
+            member.confirmed_at,
+        )
+        return member
