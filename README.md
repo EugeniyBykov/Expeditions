@@ -58,8 +58,8 @@ Notes:
 ## Useful commands
 
     make install
+    install-dev
     make lint
-    make format
     make test
     make run
     make wipe-db
