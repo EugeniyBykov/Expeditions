@@ -23,6 +23,10 @@ Apply the initial migration to create the database schema:
 
     alembic upgrade head
 
+Seed initial data:
+
+    python3 scripts/seed_data.py
+
 If you are using Docker, make sure PostgreSQL is running before applying migrations.
 
 ## Run the project

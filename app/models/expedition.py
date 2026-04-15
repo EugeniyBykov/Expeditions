@@ -14,7 +14,11 @@ class Expedition(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[ExpeditionStatus] = mapped_column(
-        SAEnum(ExpeditionStatus, name="expedition_status"),
+        SAEnum(
+            ExpeditionStatus,
+            name="expedition_status",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         nullable=False,
     )
     start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

@@ -15,7 +15,11 @@ class ExpeditionMember(Base):
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
 
     state: Mapped[ExpeditionMemberState] = mapped_column(
-        SAEnum(ExpeditionMemberState, name="expedition_member_state"),
+        SAEnum(
+            ExpeditionMemberState,
+            name="expedition_member_state",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         nullable=False,
     )
     invited_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

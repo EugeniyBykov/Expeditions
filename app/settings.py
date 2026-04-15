@@ -1,9 +1,12 @@
 import os
+from pathlib import Path
 from typing import Optional
 
-from pydantic_settings import BaseSettings as PydanticBaseSettings
+from pydantic import Field
+from pydantic_settings import BaseSettings as PydanticBaseSettings, SettingsConfigDict
 
-ENV_FILE = os.getenv("ENV_FILE", ".env")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+ENV_FILE = Path(os.getenv("ENV_FILE", PROJECT_ROOT / ".env"))
 
 
 class BaseSettings(PydanticBaseSettings):
@@ -14,9 +17,7 @@ class BaseSettings(PydanticBaseSettings):
     which will be concatenated to the start of the variable name.
     """
 
-    class Config:
-        env_file = ENV_FILE
-        extra = "ignore"
+    model_config = SettingsConfigDict(env_file=ENV_FILE, extra="ignore")
 
 
 class APISettings(BaseSettings):
@@ -24,8 +25,7 @@ class APISettings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 5000
 
-    class Config(BaseSettings.Config):
-        env_prefix = "API_"
+    model_config = SettingsConfigDict(env_prefix="API_", env_file=ENV_FILE, extra="ignore")
 
 
 class DatabaseSettings(BaseSettings):
@@ -34,10 +34,14 @@ class DatabaseSettings(BaseSettings):
     postgres_user: Optional[str] = None
     postgres_password: Optional[str] = None
     postgres_port: int = 5432
-    database_url: Optional[str] = None
+    database_url: Optional[str] = Field(default=None, alias="DATABASE_URL")
 
-    class Config(BaseSettings.Config):
-        env_prefix = ""
+    model_config = SettingsConfigDict(
+        env_prefix="",
+        env_file=ENV_FILE,
+        extra="ignore",
+        populate_by_name=True,
+    )
 
     @property
     def sqlalchemy_url(self) -> str:
@@ -55,8 +59,8 @@ class DatabaseSettings(BaseSettings):
         ]
         if missing:
             raise RuntimeError(
-                "Database configuration is incomplete. Set either DATABASE_URL "
-                "or the following variables: postgres_db, postgres_user, postgres_password."
+                f"Database configuration is incomplete. Missing: {', '.join(missing)}. "
+                "Set either DATABASE_URL or the individual postgres_* variables."
             )
 
         return (
@@ -80,8 +84,8 @@ class DatabaseSettings(BaseSettings):
         ]
         if missing:
             raise RuntimeError(
-                "Database configuration is incomplete. Set either DATABASE_URL "
-                "or the following variables: postgres_db, postgres_user, postgres_password."
+                f"Database configuration is incomplete. Missing: {', '.join(missing)}. "
+                "Set either DATABASE_URL or the individual postgres_* variables."
             )
 
         return (
@@ -98,8 +102,7 @@ class APIDocsSettings(BaseSettings):
     """Description of the API"""
     version: str = "version"
 
-    class Config(BaseSettings.Config):
-        env_prefix = "API_DOCS_"
+    model_config = SettingsConfigDict(env_prefix="API_DOCS_", env_file=ENV_FILE, extra="ignore")
 
 
 class RequestLoggingSettings(BaseSettings):
@@ -107,8 +110,7 @@ class RequestLoggingSettings(BaseSettings):
     level: str = "DEBUG"
     serialize: bool = False
 
-    class Config(BaseSettings.Config):
-        env_prefix = "REQUEST_LOG_"
+    model_config = SettingsConfigDict(env_prefix="REQUEST_LOG_", env_file=ENV_FILE, extra="ignore")
 
 
 api_settings = APISettings()
