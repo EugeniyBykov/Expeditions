@@ -1,47 +1,22 @@
 from __future__ import annotations
 
-from datetime import datetime
-from uuid import UUID
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
-from pydantic import BaseModel, Field, model_validator
+from sqlalchemy.exc import IntegrityError
 
 from app.db import AsyncUnitOfWork
+from app.dto.expedition import ExpeditionCreateRequest, ExpeditionInviteRequest
 from app.models import Expedition, User
 from app.models.base import ExpeditionStatus, UserRole
 from app.repositories.expedition import ExpeditionRepository
-
-
-class ExpeditionCreateRequest(BaseModel):
-    title: str = Field(min_length=1, max_length=255)
-    description: str | None = None
-    start_at: datetime
-    end_at: datetime | None = None
-    capacity: int = Field(ge=2)
-
-    @model_validator(mode="after")
-    def validate_end_at(self) -> "ExpeditionCreateRequest":
-        if self.end_at is not None and self.end_at <= self.start_at:
-            raise ValueError("end_at must be greater than start_at")
-        return self
-
-
-class ExpeditionResponse(BaseModel):
-    id: UUID
-    title: str
-    description: str | None
-    status: ExpeditionStatus
-    start_at: datetime
-    end_at: datetime | None
-    capacity: int
-    chief_id: UUID
-
-    model_config = {"from_attributes": True}
+from app.repositories.expedition_member import ExpeditionMemberRepository
 
 
 class ExpeditionService:
     def __init__(self) -> None:
         self.repository = ExpeditionRepository()
+        self.member_repository = ExpeditionMemberRepository()
 
     async def create_expedition(
         self,
@@ -55,12 +30,6 @@ class ExpeditionService:
                 detail="Only chiefs can create expeditions",
             )
 
-        if uow.session is None:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Database session is not initialized",
-            )
-
         expedition = Expedition(
             title=payload.title,
             description=payload.description,
@@ -71,3 +40,66 @@ class ExpeditionService:
             chief_id=user.id,
         )
         return await self.repository.create(uow.session, expedition)
+
+    async def invite_member(
+        self,
+        payload: ExpeditionInviteRequest,
+        user: User,
+        uow: AsyncUnitOfWork,
+    ):
+        expedition = await self._get_expedition_or_404(payload.expedition_id, uow)
+
+        if expedition.chief_id != user.id or user.role != UserRole.CHIEF:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only expedition chief can invite members",
+            )
+
+        invited_user = await self._get_user_or_404(payload.user_id, uow)
+
+        if invited_user.role != UserRole.MEMBER:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only users with member role can be invited",
+            )
+
+        invited_at = datetime.now(timezone.utc)
+
+        try:
+            return await self.member_repository.create(
+                uow.session,
+                expedition_id=expedition.id,
+                user_id=invited_user.id,
+                invited_at=invited_at,
+            )
+        except IntegrityError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is already invited to this expedition",
+            )
+
+    async def _get_expedition_or_404(
+        self,
+        expedition_id,
+        uow: AsyncUnitOfWork,
+    ) -> Expedition:
+        expedition = await self.repository.get_by_id(uow.session, expedition_id)
+        if expedition is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Expedition not found",
+            )
+        return expedition
+
+    async def _get_user_or_404(
+        self,
+        user_id,
+        uow: AsyncUnitOfWork,
+    ) -> User:
+        user = await uow.session.get(User, user_id)
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+        return user

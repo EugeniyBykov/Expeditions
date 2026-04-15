@@ -76,8 +76,20 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
 
+    op.create_unique_constraint(
+        "expedition_member_user_id_expedition_id",
+        "expedition_members",
+        ["expedition_id", "user_id"],
+    )
+
 
 def downgrade() -> None:
+    op.drop_constraint(
+        "expedition_member_user_id_expedition_id",
+        "expedition_members",
+        type_="unique",
+    )
+
     op.drop_table("expedition_members")
     op.drop_table("expeditions")
     op.drop_index(op.f("ix_users_email"), table_name="users")
@@ -87,3 +99,4 @@ def downgrade() -> None:
     expedition_member_state_enum.drop(bind, checkfirst=True)
     expedition_status_enum.drop(bind, checkfirst=True)
     user_role_enum.drop(bind, checkfirst=True)
+

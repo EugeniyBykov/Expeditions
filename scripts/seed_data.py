@@ -22,10 +22,15 @@ except ModuleNotFoundError:
 
 
 CHIEF_COUNT = 3
+MEMBER_COUNT = 20
 
 
-def build_email(index: int) -> str:
+def build_chief_email(index: int) -> str:
     return f"chief{index}@test.com"
+
+
+def build_member_email(index: int) -> str:
+    return f"member{index}@test.com"
 
 
 async def get_existing_user_by_email(session: AsyncSession, email: str) -> User | None:
@@ -37,7 +42,7 @@ async def seed_chiefs(session: AsyncSession) -> list[User]:
     chiefs: list[User] = []
 
     for i in range(1, CHIEF_COUNT + 1):
-        email = build_email(i)
+        email = build_chief_email(i)
         user = await get_existing_user_by_email(session, email)
         if user is None:
             user = User(
@@ -53,12 +58,33 @@ async def seed_chiefs(session: AsyncSession) -> list[User]:
     return chiefs
 
 
+async def seed_members(session: AsyncSession) -> list[User]:
+    members: list[User] = []
+
+    for i in range(1, MEMBER_COUNT + 1):
+        email = build_member_email(i)
+        user = await get_existing_user_by_email(session, email)
+        if user is None:
+            user = User(
+                id=uuid4(),
+                email=email,
+                name=f"Member {i}",
+                role=UserRole.MEMBER,
+            )
+            session.add(user)
+        members.append(user)
+
+    await session.flush()
+    return members
+
+
 async def main() -> None:
     async with async_session_factory() as session:
         async with session.begin():
             await seed_chiefs(session)
+            await seed_members(session)
 
-    print("Seed chiefs have been created successfully.")
+    print("Seed chiefs and members have been created successfully.")
 
 
 if __name__ == "__main__":
