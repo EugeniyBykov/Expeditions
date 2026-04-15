@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable, Coroutine
 from contextlib import AbstractAsyncContextManager
-from typing import Optional, TypeVar
+from typing import Any, Optional, TypeVar
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -31,6 +31,16 @@ class AsyncUnitOfWork(AbstractAsyncContextManager["AsyncUnitOfWork"]):
     ):
         self._session_factory = session_factory
         self.session: Optional[AsyncSession] = None
+        self._post_commit: list[Callable[[], Coroutine[Any, Any, None]]] = []
+
+    def after_commit(self, coro_fn: Callable[[], Coroutine[Any, Any, None]]) -> None:
+        """Register a coroutine function to be called after a successful commit."""
+        self._post_commit.append(coro_fn)
+
+    async def _run_post_commit(self) -> None:
+        callbacks, self._post_commit = self._post_commit, []
+        for cb in callbacks:
+            await cb()
 
     async def __aenter__(self) -> "AsyncUnitOfWork":
         self.session = self._session_factory()
@@ -43,6 +53,7 @@ class AsyncUnitOfWork(AbstractAsyncContextManager["AsyncUnitOfWork"]):
         try:
             if exc_type is None:
                 await self.session.commit()
+                await self._run_post_commit()
             else:
                 await self.session.rollback()
         finally:
@@ -52,6 +63,7 @@ class AsyncUnitOfWork(AbstractAsyncContextManager["AsyncUnitOfWork"]):
         if self.session is None:
             raise RuntimeError("UnitOfWork session is not initialized")
         await self.session.commit()
+        await self._run_post_commit()
 
     async def rollback(self) -> None:
         if self.session is None:

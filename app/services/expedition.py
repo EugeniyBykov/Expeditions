@@ -114,7 +114,8 @@ class ExpeditionService:
         )
 
         expedition.status = ExpeditionStatus.READY
-        await broadcast_expedition_status(expedition.id, expedition.status.value)
+        exp_id, status_val = expedition.id, expedition.status.value
+        uow.after_commit(lambda: broadcast_expedition_status(exp_id, status_val))
         return expedition
 
     async def mark_active(
@@ -170,7 +171,8 @@ class ExpeditionService:
             )
 
         expedition.status = ExpeditionStatus.ACTIVE
-        await broadcast_expedition_status(expedition.id, expedition.status.value)
+        exp_id, status_val = expedition.id, expedition.status.value
+        uow.after_commit(lambda: broadcast_expedition_status(exp_id, status_val))
         return expedition
 
     async def mark_finished(
@@ -189,7 +191,8 @@ class ExpeditionService:
         )
 
         expedition.status = ExpeditionStatus.FINISHED
-        await broadcast_expedition_status(expedition.id, expedition.status.value)
+        exp_id, status_val = expedition.id, expedition.status.value
+        uow.after_commit(lambda: broadcast_expedition_status(exp_id, status_val))
         return expedition
 
     async def invite_member(
@@ -229,7 +232,10 @@ class ExpeditionService:
                 user_id=invited_user.id,
                 invited_at=invited_at,
             )
-            await broadcast_member_invited(expedition.id, invited_user.id, invited_at)
+            exp_id, user_id = expedition.id, invited_user.id
+            uow.after_commit(
+                lambda: broadcast_member_invited(exp_id, user_id, invited_at)
+            )
             return member
         except IntegrityError:
             raise HTTPException(
@@ -277,9 +283,8 @@ class ExpeditionService:
         member.state = ExpeditionMemberState.CONFIRMED
         member.confirmed_at = datetime.now(timezone.utc)
 
-        await broadcast_member_confirmed(
-            expedition.id,
-            user.id,
-            member.confirmed_at,
+        exp_id, user_id, confirmed_at = expedition.id, user.id, member.confirmed_at
+        uow.after_commit(
+            lambda: broadcast_member_confirmed(exp_id, user_id, confirmed_at)
         )
         return member
