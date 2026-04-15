@@ -22,7 +22,9 @@ class Expedition(Base, TimestampMixin):
         nullable=False,
     )
     start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    end_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     capacity: Mapped[int] = mapped_column(Integer, nullable=False)
 
     chief_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False)

@@ -24,7 +24,7 @@ def save_schema(filename, sch):
         f.write(json.dumps(sch, indent=2))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     file_path = sys.argv[-1]
     if not file_path.endswith(".json"):
         print("Path must be a JSON file!")

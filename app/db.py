@@ -26,7 +26,9 @@ T = TypeVar("T")
 class AsyncUnitOfWork(AbstractAsyncContextManager["AsyncUnitOfWork"]):
     """Async Unit of Work for managing a database transaction lifecycle."""
 
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession] = async_session_factory):
+    def __init__(
+        self, session_factory: async_sessionmaker[AsyncSession] = async_session_factory
+    ):
         self._session_factory = session_factory
         self.session: Optional[AsyncSession] = None
 

@@ -27,6 +27,10 @@ Seed initial data:
 
     python3 scripts/seed_data.py
 
+If you need to reset the database during development, run:
+
+    make wipe-db
+
 If you are using Docker, make sure PostgreSQL is running before applying migrations.
 
 ## Run the project
@@ -58,6 +62,7 @@ Notes:
     make format
     make test
     make run
+    make wipe-db
 
 ## Notes
 

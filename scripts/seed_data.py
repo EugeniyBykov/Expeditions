@@ -25,7 +25,7 @@ CHIEF_COUNT = 3
 
 
 def build_email(index: int) -> str:
-    return f"chief{index}@test.test"
+    return f"chief{index}@test.com"
 
 
 async def get_existing_user_by_email(session: AsyncSession, email: str) -> User | None:
