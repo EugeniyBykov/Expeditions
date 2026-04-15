@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.constants import MIN_EXPEDITION_MEMBERS_COUNT
 from app.models.base import ExpeditionStatus
 
 
@@ -13,7 +14,7 @@ class ExpeditionCreateRequest(BaseModel):
     description: str | None = None
     start_at: datetime
     end_at: datetime | None = None
-    capacity: int = Field(ge=2)
+    capacity: int = Field(ge=MIN_EXPEDITION_MEMBERS_COUNT)
 
     @model_validator(mode="after")
     def validate_end_at(self) -> "ExpeditionCreateRequest":

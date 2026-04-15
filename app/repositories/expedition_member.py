@@ -3,7 +3,12 @@ from uuid import UUID
 
 from sqlalchemy import select
 
-from app.models import ExpeditionMember, ExpeditionMemberState
+from app.models import (
+    Expedition,
+    ExpeditionMember,
+    ExpeditionMemberState,
+    ExpeditionStatus,
+)
 
 
 class ExpeditionMemberRepository:
@@ -41,3 +46,35 @@ class ExpeditionMemberRepository:
         await session.flush()
         await session.refresh(member)
         return member
+
+    async def get_confirmed_member_ids(
+        self, session, expedition_id: UUID
+    ) -> list[UUID]:
+        result = await session.execute(
+            select(ExpeditionMember.user_id).where(
+                ExpeditionMember.expedition_id == expedition_id,
+                ExpeditionMember.state == ExpeditionMemberState.CONFIRMED,
+            )
+        )
+        return [row[0] for row in result.all()]
+
+    async def count_active_expeditions_for_users(
+        self,
+        session,
+        user_ids: list[UUID],
+        exclude_expedition_id: UUID,
+    ) -> int:
+        if not user_ids:
+            return 0
+
+        result = await session.execute(
+            select(ExpeditionMember)
+            .join(ExpeditionMember.expedition)
+            .where(
+                ExpeditionMember.user_id.in_(user_ids),
+                ExpeditionMember.state == ExpeditionMemberState.CONFIRMED,
+                Expedition.id != exclude_expedition_id,
+                Expedition.status == ExpeditionStatus.ACTIVE,
+            )
+        )
+        return len(result.scalars().all())

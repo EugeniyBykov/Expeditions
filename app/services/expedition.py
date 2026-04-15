@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
+from app.constants import MIN_EXPEDITION_MEMBERS_COUNT
 from app.db import AsyncUnitOfWork
 from app.dto.expedition import ExpeditionCreateRequest, ExpeditionInviteRequest
 from app.models import Expedition, User
@@ -40,6 +42,89 @@ class ExpeditionService:
             chief_id=user.id,
         )
         return await self.repository.create(uow.session, expedition)
+
+    async def mark_ready(
+        self,
+        expedition_id: UUID,
+        user: User,
+        uow: AsyncUnitOfWork,
+    ) -> Expedition:
+        expedition = await self._get_expedition_or_404(expedition_id, uow)
+
+        if expedition.chief_id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only expedition chief can change expedition status",
+            )
+
+        if expedition.status in (ExpeditionStatus.ACTIVE, ExpeditionStatus.FINISHED):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot move expedition to ready from active or finished",
+            )
+
+        expedition.status = ExpeditionStatus.READY
+        return expedition
+
+    async def mark_active(
+        self,
+        expedition_id: UUID,
+        user: User,
+        uow: AsyncUnitOfWork,
+    ) -> Expedition:
+        expedition = await self._get_expedition_or_404(expedition_id, uow)
+
+        if expedition.chief_id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only expedition chief can change expedition status",
+            )
+
+        if expedition.status != ExpeditionStatus.READY:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Expedition can be moved to active only from ready",
+            )
+
+        now = datetime.now(timezone.utc)
+        if expedition.start_at > now:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Expedition can be started only when start_at is reached",
+            )
+
+        confirmed_member_ids = await self.member_repository.get_confirmed_member_ids(
+            uow.session,
+            expedition.id,
+        )
+
+        if len(confirmed_member_ids) < MIN_EXPEDITION_MEMBERS_COUNT:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"At least {MIN_EXPEDITION_MEMBERS_COUNT} confirmed members are required",
+            )
+
+        if len(confirmed_member_ids) > expedition.capacity:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Confirmed members exceed expedition capacity",
+            )
+
+        active_conflicts = (
+            await self.member_repository.count_active_expeditions_for_users(
+                uow.session,
+                confirmed_member_ids,
+                expedition.id,
+            )
+        )
+        if active_conflicts > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="One or more confirmed members are already in another active expedition",
+            )
+
+        expedition.status = ExpeditionStatus.ACTIVE
+        return expedition
 
     async def invite_member(
         self,
@@ -86,7 +171,7 @@ class ExpeditionService:
 
     async def confirm_invitation(
         self,
-        expedition_id,
+        expedition_id: UUID,
         user: User,
         uow: AsyncUnitOfWork,
     ):
@@ -128,7 +213,7 @@ class ExpeditionService:
 
     async def _get_expedition_or_404(
         self,
-        expedition_id,
+        expedition_id: UUID,
         uow: AsyncUnitOfWork,
     ) -> Expedition:
         expedition = await self.repository.get_by_id(uow.session, expedition_id)
@@ -141,7 +226,7 @@ class ExpeditionService:
 
     async def _get_user_or_404(
         self,
-        user_id,
+        user_id: UUID,
         uow: AsyncUnitOfWork,
     ) -> User:
         user = await uow.session.get(User, user_id)

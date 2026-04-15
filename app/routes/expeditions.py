@@ -32,6 +32,34 @@ async def create_expedition(
 
 
 @router.post(
+    "/{expedition_id}/ready",
+    response_model=ExpeditionResponse,
+)
+async def mark_ready(
+    expedition_id: UUID,
+    current_user: User = Depends(get_current_user),
+    uow: AsyncUnitOfWork = Depends(get_uow),
+) -> ExpeditionResponse:
+    service = ExpeditionService()
+    expedition = await service.mark_ready(expedition_id, current_user, uow)
+    return ExpeditionResponse.model_validate(expedition)
+
+
+@router.post(
+    "/{expedition_id}/active",
+    response_model=ExpeditionResponse,
+)
+async def mark_active(
+    expedition_id: UUID,
+    current_user: User = Depends(get_current_user),
+    uow: AsyncUnitOfWork = Depends(get_uow),
+) -> ExpeditionResponse:
+    service = ExpeditionService()
+    expedition = await service.mark_active(expedition_id, current_user, uow)
+    return ExpeditionResponse.model_validate(expedition)
+
+
+@router.post(
     "/invite",
     response_model=ExpeditionInviteResponse,
     status_code=status.HTTP_201_CREATED,
